@@ -1,4 +1,4 @@
-# Kotlin Paper plugin template
+# JMWayPointManager
 
 ## Usage
 1. Create repository from template
