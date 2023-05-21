@@ -4,6 +4,20 @@ plugins {
     kotlin("jvm") version "1.7.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("net.minecrell.plugin-yml.bukkit") version "0.5.2"
+    `maven-publish`
+    java
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "org.grimurrp"
+            artifactId = "jmwaypointmanager"
+            version = "0.1"
+
+            from(components["java"])
+        }
+    }
 }
 
 group = "org.grimurrp"
