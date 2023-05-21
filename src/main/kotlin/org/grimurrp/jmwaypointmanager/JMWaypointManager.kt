@@ -14,22 +14,31 @@ class JMWaypointManager : JavaPlugin() {
     override fun onEnable() {
     }
 
-    public fun createWaypoint(player: Player, name: String, loc: Location, type: String, red: Int, green: Int, blue: Int) {
-        println("Create ${name + '_' + loc.x + ',' + loc.y+ ',' + loc.z} for player ${player.name}")
+    data class Waypoint(
+        val name: String,
+        val loc: Location,
+        val type: String,
+        val red: Int,
+        val green: Int,
+        val blue: Int
+    )
+
+    public fun createWaypoint(player: Player, waypoint: Waypoint) {
+        println("Create ${name + '_' + waypoint.loc.x + ',' + waypoint.loc.y+ ',' + waypoint.loc.z} for player ${player.name}")
 
         val obj = JsonObject()
-        obj.addProperty("id", name + '_' + loc.x + ',' + loc.y+ ',' + loc.z)
+        obj.addProperty("id", name + '_' + waypoint.loc.x + ',' + waypoint.loc.y+ ',' + waypoint.loc.z)
         obj.addProperty("name", name)
         obj.addProperty("icon", "waypoint-normal.png")
         obj.addProperty("enable", true)
-        obj.addProperty("type", type)
+        obj.addProperty("type", waypoint.type)
         obj.addProperty("origin", "external")
-        obj.addProperty("x", loc.x)
-        obj.addProperty("y", loc.y)
-        obj.addProperty("z", loc.z)
-        obj.addProperty("r", red)
-        obj.addProperty("g", green)
-        obj.addProperty("b", blue)
+        obj.addProperty("x", waypoint.loc.x)
+        obj.addProperty("y", waypoint.loc.y)
+        obj.addProperty("z", waypoint.loc.z)
+        obj.addProperty("r", waypoint.red)
+        obj.addProperty("g", waypoint.green)
+        obj.addProperty("b", waypoint.blue)
         obj.addProperty("persistent", false)
         val dimensions = JsonArray(1)
         dimensions.add("minecraft:" + player.getWorld().getName())

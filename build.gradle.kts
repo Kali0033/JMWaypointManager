@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "org.grimurrp"
-version = "1.0-SNAPSHOT"
+version = "0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -22,8 +22,8 @@ repositories {
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT")
 
-    testImplementation(kotlin("test"))
-    testImplementation("com.github.seeseemelk:MockBukkit-v1.19:2.29.0")
+    //testImplementation(kotlin("test"))
+    //testImplementation("com.github.seeseemelk:MockBukkit-v1.19:2.29.0")
 
     // packetevents
     compileOnly("com.github.retrooper.packetevents:spigot:2.0.0-SNAPSHOT")
@@ -42,9 +42,9 @@ bukkit {
 }
 
 tasks {
-    test {
-        useJUnitPlatform()
-    }
+    //test {
+    //    useJUnitPlatform()
+    //}
 
     build {
         dependsOn(shadowJar)
