@@ -53,7 +53,7 @@ class JMWaypointManager : JavaPlugin() {
         val blue: Int,
         val icon: String, // not currently used, reserved for future JM update
         val persistent: Boolean,
-        val origin: Boolean,
+        val origin: String,
         val announce: Boolean,
         val dimensions: Array<String>
     )
@@ -83,7 +83,7 @@ class JMWaypointManager : JavaPlugin() {
             obj.addProperty("icon", "journeymap:ui/img/waypoint-icon.png")
             obj.addProperty("enable", true) // must always be true
             obj.addProperty("type", waypoint.type)
-            obj.addProperty("origin", "external")
+            obj.addProperty("origin", waypoint.origin)
             obj.addProperty("x", waypoint.loc.x)
             obj.addProperty("y", waypoint.loc.y)
             obj.addProperty("z", waypoint.loc.z)
@@ -131,7 +131,7 @@ class JMWaypointManager : JavaPlugin() {
             // create packet
             val obj = JsonObject()
             obj.addProperty("name", name)
-            obj.addProperty("origin", "external")
+            obj.addProperty("origin", origin)
 
             // Debug
             println(obj.toString())
