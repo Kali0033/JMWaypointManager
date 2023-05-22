@@ -1,29 +1,16 @@
 package org.grimurrp.jmwaypointmanager
 
 import com.github.retrooper.packetevents.PacketEvents
+import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper
 import com.github.retrooper.packetevents.netty.buffer.UnpooledByteBufAllocationHelper
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPluginMessage
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.sun.jna.StringArray
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
-import io.netty.buffer.Unpooled
-import net.minecraft.network.FriendlyByteBuf
-import net.minecraft.network.PacketListener
-import net.minecraft.network.protocol.Packet
-import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket
-import net.minecraft.resources.ResourceLocation
 import org.bukkit.Location
-//import org.bukkit.craftbukkit.v1_19_R2.entity.CraftPlayer
 import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
-import org.joml.Vector3d
-import org.json.simple.JSONArray
-import java.io.ByteArrayOutputStream
-import java.io.DataOutputStream
-import java.io.IOException
 
 
 class JMWaypointManager : JavaPlugin() {
@@ -45,20 +32,21 @@ class JMWaypointManager : JavaPlugin() {
      * Note that ID will always be "id = "name + "_" + x + "," + y + "," + z", this format is required.
      *
      * @property name The name of the waypoint, also used for ID.
-     * @property loc Vector3d containing the X, Y, Z coordinates of waypoint
+     * @property loc Location containing the X, Y, Z coordinates of waypoint
      * @property type Indicates type of waypoint, can either be "normal" or "death"
      * @property red RGB Red value
      * @property green RGB Green value
      * @property blue RGB Blue value
      * @property icon Icon for the waypoint, currently unused as only valid option is "journeymap:ui/img/waypoint-icon.png"
      * @property origin Currently supported origins include "external", a base type, and "external-force" which is a waypoint that a user cannot disable
+     * @property announce Informs the user of waypoint creation
      * @property persistent If true waypoints will save to disk, persevering beyond current user session to the server
      * @property dimensions String array containing dimensions in which to create the waypoint, multiple supported
      * Example dimensions input: "minecraft:overworld"
      */
     data class Waypoint(
         val name: String,
-        val loc: Vector3d,
+        val loc: Location,
         val type: String, // can be either "normal" or "death"
         val red: Int,
         val green: Int,
@@ -66,17 +54,18 @@ class JMWaypointManager : JavaPlugin() {
         val icon: String, // not currently used, reserved for future JM update
         val persistent: Boolean,
         val origin: Boolean,
-        val dimensions: StringArray
+        val announce: Boolean,
+        val dimensions: Array<String>
     )
 
     companion object {
         var plugin: Plugin? = null
         val CHANNEL = "journeymap:waypoint"
 
-        fun writeStringToBuffer(dataOut: DataOutputStream, string: String) {
+        fun writeStringToBuffer(dataOut: Any, string: String) {
             val bytes = string.toByteArray(Charsets.UTF_8)
-            dataOut.writeInt(bytes.size)
-            dataOut.write(bytes)
+            ByteBufHelper.writeInt(dataOut, bytes.size)
+            ByteBufHelper.writeBytes(dataOut, bytes)
         }
 
         /**
@@ -110,18 +99,18 @@ class JMWaypointManager : JavaPlugin() {
             // Debug
             println(obj.toString())
 
-            val out = FriendlyByteBuf(Unpooled.buffer())
-            out.writeByte(0) // Extra Byte for Forge
-            out.writeUtf(obj.toString()) // Payload
-            out.writeUtf("create") // Action
-            out.writeBoolean(true) // Announce
+            val buffer = UnpooledByteBufAllocationHelper.buffer()
+            ByteBufHelper.writeByte(buffer, 0) // Extra byte for Forge
+            writeStringToBuffer(buffer, obj.toString()) // Payload
+            writeStringToBuffer(buffer, "create") // Action
+            ByteBufHelper.writeBoolean(buffer, waypoint.announce) // Announce
 
             for (player in players) {
                 if (player.isOnline) {
                     println("Create ${waypoint.name + '_' + waypoint.loc.x + ',' + waypoint.loc.y+ ',' + waypoint.loc.z} for player ${player.name}")
                     //player.sendPacket(ClientboundCustomPayloadPacket(ResourceLocation(CHANNEL), out))
 
-                    val wrapper = WrapperPlayServerPluginMessage(CHANNEL, out.readByteArray())
+                    val wrapper = WrapperPlayServerPluginMessage(CHANNEL, ByteBufHelper.array(buffer))
                     PacketEvents.getAPI().getPlayerManager().sendPacketSilently(player, wrapper)
 
                     println("Waypoint packet successfully sent to ${player.name}")
@@ -147,18 +136,18 @@ class JMWaypointManager : JavaPlugin() {
             // Debug
             println(obj.toString())
 
-            val out = FriendlyByteBuf(Unpooled.buffer())
-            out.writeByte(0) // Extra Byte for Forge
-            out.writeUtf(obj.toString()) // Payload
-            out.writeUtf("delete") // Action
-            out.writeBoolean(announce) // Announce
-
+            val buffer = UnpooledByteBufAllocationHelper.buffer()
+            ByteBufHelper.writeByte(buffer, 0) // Extra byte for Forge
+            writeStringToBuffer(buffer, obj.toString()) // Payload
+            writeStringToBuffer(buffer, "delete") // Action
+            ByteBufHelper.writeBoolean(buffer, announce) // Announce
 
             // send packet to all players in list
             for (player in players) {
                 if (player.isOnline) {
                     println("Delete $name for player ${player.name}")
-                    val wrapper = WrapperPlayServerPluginMessage(CHANNEL, out.readByteArray())
+
+                    val wrapper = WrapperPlayServerPluginMessage(CHANNEL, ByteBufHelper.array(buffer))
                     PacketEvents.getAPI().getPlayerManager().sendPacketSilently(player, wrapper)
 
                     println("Waypoint deletion packet successfully sent to ${player.name}")

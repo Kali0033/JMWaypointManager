@@ -7,7 +7,7 @@ plugins {
     `maven-publish`
     java
     // Paperweight 1.19.3
-    id("io.papermc.paperweight.userdev") version "1.5.3"
+    // id("io.papermc.paperweight.userdev") version "1.5.3"
 }
 
 publishing {
@@ -45,7 +45,7 @@ dependencies {
     compileOnly("com.github.retrooper.packetevents:spigot:2.0.0-SNAPSHOT")
 
     // Ver 1.19.4 paperweight
-    paperweight.paperDevBundle("1.19.3-R0.1-SNAPSHOT")
+    // paperweight.paperDevBundle("1.19.3-R0.1-SNAPSHOT")
 }
 
 java {
