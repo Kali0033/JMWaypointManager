@@ -2,12 +2,17 @@ package org.grimurrp.jmwaypointmanager
 
 import com.github.retrooper.packetevents.PacketEvents
 import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper
-import com.github.retrooper.packetevents.netty.buffer.UnpooledByteBufAllocationHelper
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPluginMessage
-import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
+import io.netty.buffer.Unpooled
+import net.minecraft.network.FriendlyByteBuf
+import net.minecraft.network.PacketListener
+import net.minecraft.network.protocol.Packet
+import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket
+import net.minecraft.resources.ResourceLocation
 import org.bukkit.Location
+import org.bukkit.craftbukkit.v1_20_R1.entity.CraftPlayer
 import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
@@ -76,7 +81,7 @@ class JMWaypointManager : JavaPlugin() {
          */
         @JvmStatic
         fun createWaypoint(players: List<Player>, waypoint: Waypoint) {
-            // create packet
+            // create json
             val obj = JsonObject()
             obj.addProperty("id", waypoint.name + '_' + waypoint.loc.x + ',' + waypoint.loc.y+ ',' + waypoint.loc.z)
             obj.addProperty("name", waypoint.name)
@@ -93,25 +98,39 @@ class JMWaypointManager : JavaPlugin() {
             obj.addProperty("persistent", waypoint.persistent)
 
             // process dimensions
-            val dimensions = Gson().toJsonTree(waypoint.dimensions).asJsonArray.toString()
-            obj.addProperty("dimensions", dimensions)
+            //val dimensions = Gson().toJsonTree(waypoint.dimensions).asJsonArray.toString()
+            //obj.addProperty("dimensions", dimensions)
+
+            val dimensions = JsonArray(1)
+            dimensions.add("minecraft:overworld")
+            obj.add("dimensions", dimensions)
 
             // Debug
             println(obj.toString())
 
+            /*
             val buffer = UnpooledByteBufAllocationHelper.buffer()
             ByteBufHelper.writeByte(buffer, 0) // Extra byte for Forge
             writeStringToBuffer(buffer, obj.toString()) // Payload
             writeStringToBuffer(buffer, "create") // Action
             ByteBufHelper.writeBoolean(buffer, waypoint.announce) // Announce
+            */
+
+
+            val out = FriendlyByteBuf(Unpooled.buffer())
+            out.writeByte(0) // Extra Byte for Forge
+            out.writeUtf(obj.toString()) // Payload
+            out.writeUtf("create") // Action
+            out.writeBoolean(waypoint.announce) // Announce
 
             for (player in players) {
                 if (player.isOnline) {
                     println("Create ${waypoint.name + '_' + waypoint.loc.x + ',' + waypoint.loc.y+ ',' + waypoint.loc.z} for player ${player.name}")
-                    //player.sendPacket(ClientboundCustomPayloadPacket(ResourceLocation(CHANNEL), out))
 
-                    val wrapper = WrapperPlayServerPluginMessage(CHANNEL, ByteBufHelper.array(buffer))
-                    PacketEvents.getAPI().getPlayerManager().sendPacketSilently(player, wrapper)
+                    player.sendPacket(ClientboundCustomPayloadPacket(ResourceLocation(CHANNEL), out))
+
+                    //val wrapper = WrapperPlayServerPluginMessage(CHANNEL, ByteBufHelper.array(buffer))
+                    //PacketEvents.getAPI().getPlayerManager().sendPacketSilently(player, wrapper)
 
                     println("Waypoint packet successfully sent to ${player.name}")
                 }
@@ -136,19 +155,30 @@ class JMWaypointManager : JavaPlugin() {
             // Debug
             println(obj.toString())
 
+
+            /*
             val buffer = UnpooledByteBufAllocationHelper.buffer()
             ByteBufHelper.writeByte(buffer, 0) // Extra byte for Forge
             writeStringToBuffer(buffer, obj.toString()) // Payload
             writeStringToBuffer(buffer, "delete") // Action
             ByteBufHelper.writeBoolean(buffer, announce) // Announce
+            */
+
+            val out = FriendlyByteBuf(Unpooled.buffer())
+            out.writeByte(0) // Extra Byte for Forge
+            out.writeUtf(obj.toString()) // Payload
+            out.writeUtf("delete") // Action
+            out.writeBoolean(announce) // Announce
 
             // send packet to all players in list
             for (player in players) {
                 if (player.isOnline) {
                     println("Delete $name for player ${player.name}")
 
-                    val wrapper = WrapperPlayServerPluginMessage(CHANNEL, ByteBufHelper.array(buffer))
-                    PacketEvents.getAPI().getPlayerManager().sendPacketSilently(player, wrapper)
+                    player.sendPacket(ClientboundCustomPayloadPacket(ResourceLocation(CHANNEL), out))
+
+                    //val wrapper = WrapperPlayServerPluginMessage(CHANNEL, ByteBufHelper.array(buffer))
+                    //PacketEvents.getAPI().getPlayerManager().sendPacketSilently(player, wrapper)
 
                     println("Waypoint deletion packet successfully sent to ${player.name}")
                 }
@@ -186,9 +216,9 @@ class JMWaypointManager : JavaPlugin() {
         /**
          * Wrapper for getting Bukkit player connection and sending packet.
          */
-        //internal fun <T: PacketListener> Player.sendPacket(p: Packet<T>) {
-        //    return (this as CraftPlayer).handle.connection.send(p)
-        //}
+        internal fun <T: PacketListener> Player.sendPacket(p: Packet<T>) {
+            return (this as CraftPlayer).handle.connection.send(p)
+        }
     }
 
 }
